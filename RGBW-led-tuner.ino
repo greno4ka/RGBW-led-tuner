@@ -1,6 +1,8 @@
 #include <LiquidCrystal.h>
 #include <LiquidMenu.h>
 
+#include "Button.h"
+
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 // Attention! Function numbering starts from 1 (src/LiquidMenu.h:448)
@@ -64,35 +66,37 @@ void decreaseLedLevel() {
 
 // Checks all the buttons.
 void buttonsCheck() {
-  int x = analogRead (0);
-
-  if (x < 50) {
-    if (menuColor < white)
-      menuColor = menuColor + 1;
-    else
-      menuColor = red;
-    menu.change_screen(menuColor);
-    return;
-  }
-  if (x < 150) {
-    menu.call_function(increase);
-    return;
-  }
-  if (x < 300) {
-    menu.call_function(decrease);
-    return;
-  }
-  if (x < 450) {
-    if (menuColor > red)
-      menuColor = menuColor - 1;
-    else
-      menuColor = white;
-    menu.change_screen(menuColor);
-    return;
-  }
-  if (x < 650) {
-    menu.switch_focus();
-    return;
+  switch (buttonClicked()) {
+    case right: {
+        if (menuColor < white)
+          menuColor = menuColor + 1;
+        else
+          menuColor = red;
+           menu.change_screen(menuColor);
+        break;
+      }
+    case left: {
+        if (menuColor > red)
+          menuColor = menuColor - 1;
+        else
+          menuColor = white;
+          menu.change_screen(menuColor);
+        break;
+      }
+    case up: {
+        menu.call_function(increase);
+        break;
+      }
+    case down: {
+        menu.call_function(decrease);
+        break;
+      }
+    case select: {
+        menu.switch_focus();
+        break;
+      }
+    case none:
+      break;
   }
 }
 
@@ -120,5 +124,6 @@ void loop() {
   buttonsCheck();
   menu.update();
   // dont hurry little arduino!
-  delay (150);
+  delay (30);
+
 }
