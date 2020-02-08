@@ -1,102 +1,30 @@
 #include <LiquidCrystal.h>
 #include <LiquidMenu.h>
 
+#include "RGBW-led-tuner.h" // all global variables are here
+
 #include "Button.h"
+#include "CallbackFunctions.h"
 
-LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
-
-// Attention! Function numbering starts from 1 (src/LiquidMenu.h:448)
-enum FunctionTypes {
-  increase = 1,
-  decrease = 2,
-};
-
-const byte led = 10; // TODO: remove
-
-/// Color-related variables
-// menuColor - is current color in menu
-enum Colors { red = 1, green = 2, blue = 3, white = 4 } menuColor = 1;
-const byte pin[4] = {1, 2, 3, 4}; // TODO: change on real pins!!!
-byte level[4] = {0, 0, 0, 0};
-byte colorStep = 5; // factor(255) = 1 * 3 * 5 * 17 - These values are best
-
-/// --- MENU DEFINITION --- ///
-LiquidLine redTitleLine(6, 0, "RED");
-LiquidLine redLevelLine(4, 1, "Level: ", level[red-1]); // about -1 read below
-LiquidScreen redScreen(redTitleLine, redLevelLine);
-
-LiquidLine greenTitleLine(6, 0, "GREEN");
-LiquidLine greenLevelLine(4, 1, "Level: ", level[green-1]); // about -1 read below
-LiquidScreen greenScreen(greenTitleLine, greenLevelLine);
-
-LiquidLine blueTitleLine(6, 0, "BLUE");
-LiquidLine blueLevelLine(4, 1, "Level: ", level[blue-1]); // about -1 read below
-LiquidScreen blueScreen(blueTitleLine, blueLevelLine);
-
-LiquidLine whiteTitleLine(6, 0, "WHITE");
-LiquidLine whiteLevelLine(4, 1, "Level: ", level[white-1]); // about -1 read below
-LiquidScreen whiteScreen(whiteTitleLine, whiteLevelLine);
-
-LiquidMenu menu(lcd, redScreen, greenScreen, blueScreen, whiteScreen);
-/// END OF MENU DEFINITION ///
-
-// Callback functions
-// Attention! realColor equals menuColor-1, because screens start from 1 (src/LiquidMenu.h:805)
-void increaseLedLevel() {
-  int realColor = menuColor - 1;
-
-  if (level[realColor] < 255)
-    level[realColor] += colorStep;
-  else
-    level[realColor] = 0;
-
-  analogWrite(led, level[realColor]);
-}
-
-void decreaseLedLevel() {
-  int realColor = menuColor - 1;
-
-  if (level[realColor] > 0)
-    level[realColor] -= colorStep;
-  else
-    level[realColor] = 255;
-
-  analogWrite(led, level[realColor]);
-}
+#include "mainButtonsCheck.h"
+#include "rgbButtonsCheck.h"
+#include "waveButtonsCheck.h"
 
 // Checks all the buttons.
 void buttonsCheck() {
-  switch (buttonClicked()) {
-    case right: {
-        if (menuColor < white)
-          menuColor = menuColor + 1;
-        else
-          menuColor = red;
-           menu.change_screen(menuColor);
+  switch (currentMenu) {
+    case main: {
+        mainButtonsCheck();
         break;
       }
-    case left: {
-        if (menuColor > red)
-          menuColor = menuColor - 1;
-        else
-          menuColor = white;
-          menu.change_screen(menuColor);
+    case rgb: {
+        rgbButtonsCheck();
         break;
       }
-    case up: {
-        menu.call_function(increase);
+    case wave: {
+        waveButtonsCheck();
         break;
       }
-    case down: {
-        menu.call_function(decrease);
-        break;
-      }
-    case select: {
-        menu.switch_focus();
-        break;
-      }
-    case none:
-      break;
   }
 }
 
@@ -117,13 +45,17 @@ void setup() {
   whiteLevelLine.attach_function(increase, increaseLedLevel);
   whiteLevelLine.attach_function(decrease, decreaseLedLevel);
 
-  menu.update();
+  wavelengthLine.attach_function(increase, increaseWavelength);
+  wavelengthLine.attach_function(decrease, decreaseWavelength);
+
+  rgbMenu.add_screen(rgbBackScreen); // because max screens in constructor is 4
+
+  systemMenu.update();
 }
 
 void loop() {
   buttonsCheck();
-  menu.update();
+  systemMenu.update();
   // dont hurry little arduino!
   delay (30);
-
 }
